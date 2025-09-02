@@ -1,77 +1,86 @@
+import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { query, mutation, action } from "./_generated/server";
-import { api } from "./_generated/api";
 
-// Write your Convex functions in any file inside this directory (`convex`).
-// See https://docs.convex.dev/functions for more.
-
-// You can read data from the database via a query:
-export const listNumbers = query({
-  // Validators for arguments.
-  args: {
-    count: v.number(),
-  },
-
-  // Query implementation.
-  handler: async (ctx, args) => {
-    //// Read the database as many times as you need here.
-    //// See https://docs.convex.dev/database/reading-data.
-    const numbers = await ctx.db
-      .query("numbers")
-      // Ordered by _creationTime, return most recent
-      .order("desc")
-      .take(args.count);
-    return {
-      viewer: (await ctx.auth.getUserIdentity())?.name ?? null,
-      numbers: numbers.reverse().map((number) => number.value),
-    };
+// Query to get all LeetCode questions
+export const getLeetCodeQuestions = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("leetcode_questions").collect();
   },
 });
 
-// You can write data to the database via a mutation:
-export const addNumber = mutation({
-  // Validators for arguments.
-  args: {
-    value: v.number(),
-  },
-
-  // Mutation implementation.
-  handler: async (ctx, args) => {
-    //// Insert or modify documents in the database here.
-    //// Mutations can also read from the database like queries.
-    //// See https://docs.convex.dev/database/writing-data.
-
-    const id = await ctx.db.insert("numbers", { value: args.value });
-
-    console.log("Added new document with id:", id);
-    // Optionally, return a value from your mutation.
-    // return id;
+// Query to get user progress for all questions
+export const getUserProgress = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("user_progress").collect();
   },
 });
 
-// You can fetch data from and send data to third-party APIs via an action:
-export const myAction = action({
-  // Validators for arguments.
-  args: {
-    first: v.number(),
+// Query to get questions with their progress status
+export const getQuestionsWithProgress = query({
+  args: {},
+  handler: async (ctx) => {
+    const questions = await ctx.db.query("leetcode_questions").collect();
+    const progress = await ctx.db.query("user_progress").collect();
+    
+    return questions.map(question => {
+      const userProgress = progress.find(p => p.questionId === question._id);
+      return {
+        ...question,
+        status: userProgress?.status || "TODO",
+        notes: userProgress?.notes || "",
+        startedAt: userProgress?.startedAt,
+        completedAt: userProgress?.completedAt,
+      };
+    });
   },
+});
 
-  // Action implementation.
+// Mutation to add a new LeetCode question
+export const addLeetCodeQuestion = mutation({
+  args: {
+    title: v.string(),
+    difficulty: v.union(v.literal("Easy"), v.literal("Medium"), v.literal("Hard")),
+    category: v.string(),
+    url: v.optional(v.string()),
+    description: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
-    //// Use the browser-like `fetch` API to send HTTP requests.
-    //// See https://docs.convex.dev/functions/actions#calling-third-party-apis-and-using-npm-packages.
-    // const response = await ctx.fetch("https://api.thirdpartyservice.com");
-    // const data = await response.json();
+    return await ctx.db.insert("leetcode_questions", args);
+  },
+});
 
-    //// Query data by running Convex queries.
-    const data = await ctx.runQuery(api.myFunctions.listNumbers, {
-      count: 10,
-    });
-    console.log(data);
+// Mutation to update user progress on a question
+export const updateUserProgress = mutation({
+  args: {
+    questionId: v.id("leetcode_questions"),
+    status: v.union(v.literal("TODO"), v.literal("IN_PROGRESS"), v.literal("DONE")),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existingProgress = await ctx.db
+      .query("user_progress")
+      .withIndex("by_question", (q) => q.eq("questionId", args.questionId))
+      .first();
 
-    //// Write data by running Convex mutations.
-    await ctx.runMutation(api.myFunctions.addNumber, {
-      value: args.first,
-    });
+    const now = Date.now();
+    
+    if (existingProgress) {
+      return await ctx.db.patch(existingProgress._id, {
+        status: args.status,
+        notes: args.notes,
+        startedAt: args.status === "IN_PROGRESS" && !existingProgress.startedAt ? now : existingProgress.startedAt,
+        completedAt: args.status === "DONE" ? now : undefined,
+      });
+    } else {
+      return await ctx.db.insert("user_progress", {
+        questionId: args.questionId,
+        status: args.status,
+        notes: args.notes,
+        startedAt: args.status === "IN_PROGRESS" ? now : undefined,
+        completedAt: args.status === "DONE" ? now : undefined,
+      });
+    }
   },
 });
