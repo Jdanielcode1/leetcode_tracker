@@ -13,6 +13,7 @@ function AddQuestionPage() {
     title: '',
     difficulty: 'Easy' as 'Easy' | 'Medium' | 'Hard',
     category: '',
+    company: '',
     url: '',
     description: ''
   })
@@ -29,6 +30,7 @@ function AddQuestionPage() {
         title: formData.title,
         difficulty: formData.difficulty,
         category: formData.category,
+        company: formData.company || undefined,
         url: formData.url || undefined,
         description: formData.description || undefined
       })
@@ -38,6 +40,7 @@ function AddQuestionPage() {
         title: '',
         difficulty: 'Easy',
         category: '',
+        company: '',
         url: '',
         description: ''
       })
@@ -55,109 +58,158 @@ function AddQuestionPage() {
   }
 
   return (
-    <main className="p-8 max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-center mb-2">
-          ➕ Add New Question
-        </h1>
-        <p className="text-gray-600 text-center">
-          Add a new LeetCode question to track
-        </p>
+    <main className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      {/* Header */}
+      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <div className="flex items-center gap-4">
+            <a href="/" className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
+              ← Problems
+            </a>
+            <div className="text-slate-300">|</div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Add New Problem</h1>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Question Title *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.title}
-              onChange={(e) => handleInputChange('title', e.target.value)}
-              placeholder="e.g., Two Sum"
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700"
-            />
-          </div>
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Problem Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  placeholder="e.g., Two Sum"
+                  className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-700 dark:text-white"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Difficulty *
-            </label>
-            <select
-              value={formData.difficulty}
-              onChange={(e) => handleInputChange('difficulty', e.target.value)}
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700"
-            >
-              <option value="Easy">Easy</option>
-              <option value="Medium">Medium</option>
-              <option value="Hard">Hard</option>
-            </select>
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Difficulty *
+                </label>
+                <select
+                  value={formData.difficulty}
+                  onChange={(e) => handleInputChange('difficulty', e.target.value)}
+                  className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-700 dark:text-white"
+                >
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Category *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.category}
-              onChange={(e) => handleInputChange('category', e.target.value)}
-              placeholder="e.g., Array, String, Dynamic Programming"
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700"
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Category *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.category}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
+                  placeholder="e.g., Array, String, Dynamic Programming"
+                  className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-700 dark:text-white"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              LeetCode URL (optional)
-            </label>
-            <input
-              type="url"
-              value={formData.url}
-              onChange={(e) => handleInputChange('url', e.target.value)}
-              placeholder="https://leetcode.com/problems/..."
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Company (optional)
+                </label>
+                <select
+                  value={formData.company}
+                  onChange={(e) => handleInputChange('company', e.target.value)}
+                  className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-700 dark:text-white"
+                >
+                  <option value="">Select Company</option>
+                  <option value="Google">Google</option>
+                  <option value="Meta">Meta</option>
+                  <option value="Amazon">Amazon</option>
+                  <option value="Apple">Apple</option>
+                  <option value="Microsoft">Microsoft</option>
+                  <option value="Netflix">Netflix</option>
+                  <option value="Tesla">Tesla</option>
+                  <option value="Uber">Uber</option>
+                  <option value="Airbnb">Airbnb</option>
+                  <option value="LinkedIn">LinkedIn</option>
+                  <option value="Twitter">Twitter</option>
+                  <option value="Salesforce">Salesforce</option>
+                  <option value="Oracle">Oracle</option>
+                  <option value="Adobe">Adobe</option>
+                  <option value="Nvidia">Nvidia</option>
+                  <option value="ByteDance">ByteDance</option>
+                  <option value="Stripe">Stripe</option>
+                  <option value="Palantir">Palantir</option>
+                  <option value="Goldman Sachs">Goldman Sachs</option>
+                  <option value="JPMorgan">JPMorgan</option>
+                </select>
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Description (optional)
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Brief description of the problem..."
-              rows={3}
-              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 resize-none"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                LeetCode URL (optional)
+              </label>
+              <input
+                type="url"
+                value={formData.url}
+                onChange={(e) => handleInputChange('url', e.target.value)}
+                placeholder="https://leetcode.com/problems/..."
+                className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-700 dark:text-white"
+              />
+            </div>
 
-          <div className="flex gap-3 pt-4">
-            <button
-              type="submit"
-              disabled={isSubmitting || !formData.title || !formData.category}
-              className="flex-1 bg-blue-500 text-white py-3 px-4 rounded-md font-medium hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSubmitting ? 'Adding...' : 'Add Question'}
-            </button>
-            <a
-              href="/"
-              className="flex-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 py-3 px-4 rounded-md font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors text-center"
-            >
-              Cancel
-            </a>
-          </div>
-        </form>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Problem Description (optional)
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => handleInputChange('description', e.target.value)}
+                placeholder="Brief description of the problem..."
+                rows={4}
+                className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-700 dark:text-white resize-none"
+              />
+            </div>
 
-        {success && (
-          <div className="mt-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-md">
-            ✅ Question added successfully!
-          </div>
-        )}
+            <div className="flex gap-4 pt-6 border-t border-slate-200 dark:border-slate-600">
+              <button
+                type="submit"
+                disabled={isSubmitting || !formData.title || !formData.category}
+                className="flex-1 bg-emerald-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSubmitting ? 'Adding Problem...' : 'Add Problem'}
+              </button>
+              <a
+                href="/"
+                className="flex-1 bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 py-3 px-6 rounded-lg font-medium hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors text-center"
+              >
+                Cancel
+              </a>
+            </div>
+          </form>
+
+          {success && (
+            <div className="mt-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+                <span className="font-medium">Problem added successfully!</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   )
