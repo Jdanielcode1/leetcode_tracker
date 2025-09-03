@@ -4,14 +4,18 @@ import { useMutation } from 'convex/react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 
 export const Route = createFileRoute('/')({
   component: Home,
 })
 
 function Home() {
+  const { user } = useAuth()
   const { data: questions } = useSuspenseQuery(
-    convexQuery(api.myFunctions.getQuestionsWithProgress, {})
+    convexQuery(api.myFunctions.getQuestionsWithProgress, { 
+      currentUser: user?.username 
+    })
   )
   const { data: companies } = useSuspenseQuery(
     convexQuery(api.myFunctions.getCompanies, {})
@@ -29,10 +33,10 @@ function Home() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'TODO': return 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
-      case 'IN_PROGRESS': return 'bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200'
-      case 'DONE': return 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
-      default: return 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+      case 'TODO': return 'bg-slate-200 text-slate-800 border-slate-400 hover:bg-slate-300 shadow-sm'
+      case 'IN_PROGRESS': return 'bg-amber-400 text-amber-900 border-amber-500 hover:bg-amber-500 shadow-md font-medium'
+      case 'DONE': return 'bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600 shadow-md font-medium'
+      default: return 'bg-slate-200 text-slate-800 border-slate-400 hover:bg-slate-300 shadow-sm'
     }
   }
 
@@ -55,8 +59,11 @@ function Home() {
   }
 
   const updateQuestionStatus = (questionId: string, newStatus: string, notes?: string) => {
+    if (!user?.username) return
+    
     updateProgress({
       questionId: questionId as any,
+      username: user.username,
       status: newStatus as any,
       notes: notes || undefined
     })
@@ -87,14 +94,14 @@ function Home() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                  <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                  <span className="text-sm text-amber-600 dark:text-amber-400 font-medium">
                     {filteredQuestions.filter(q => q.status === 'IN_PROGRESS').length} In Progress
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                  <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
                     {filteredQuestions.filter(q => q.status === 'DONE').length} Solved
                   </span>
                 </div>
@@ -135,8 +142,8 @@ function Home() {
           {/* Mobile Progress Summary */}
           <div className="md:hidden mt-3 flex justify-between text-sm">
             <span className="text-slate-600">{filteredQuestions.filter(q => q.status === 'TODO').length} Todo</span>
-            <span className="text-yellow-600">{filteredQuestions.filter(q => q.status === 'IN_PROGRESS').length} In Progress</span>
-            <span className="text-green-600">{filteredQuestions.filter(q => q.status === 'DONE').length} Solved</span>
+            <span className="text-amber-600 font-medium">{filteredQuestions.filter(q => q.status === 'IN_PROGRESS').length} In Progress</span>
+            <span className="text-emerald-600 font-medium">{filteredQuestions.filter(q => q.status === 'DONE').length} Solved</span>
             <span className="text-slate-500">{filteredQuestions.length} Total</span>
           </div>
         </div>
@@ -151,8 +158,9 @@ function Home() {
           <div className="bg-slate-50 dark:bg-slate-700 px-6 py-3 border-b border-slate-200 dark:border-slate-600">
             <div className="grid grid-cols-12 gap-4 text-sm font-medium text-slate-700 dark:text-slate-300">
               <div className="col-span-1">Status</div>
-              <div className="col-span-3">Problem</div>
-              <div className="col-span-2">Difficulty</div>
+              <div className="col-span-2">Problem</div>
+              <div className="col-span-1">Difficulty</div>
+              <div className="col-span-2">Completed By</div>
               <div className="col-span-2">Category</div>
               <div className="col-span-2">Company</div>
               <div className="col-span-1">Complexity</div>
@@ -172,10 +180,10 @@ function Home() {
                         <button
                           key={status}
                           onClick={() => updateQuestionStatus(question._id, status, question.notes)}
-                          className={`w-6 h-6 rounded-full text-xs font-bold transition-all ${
+                          className={`w-6 h-6 rounded-full text-xs font-bold transition-all border ${
                             question.status === status
                               ? getStatusColor(status)
-                              : 'bg-slate-100 text-slate-400 hover:bg-slate-200 border border-slate-300'
+                              : 'bg-slate-50 text-slate-400 hover:bg-slate-100 border-slate-200 hover:border-slate-300'
                           }`}
                           title={status.replace('_', ' ')}
                         >
@@ -186,7 +194,7 @@ function Home() {
                   </div>
 
                   {/* Problem Title Column */}
-                  <div className="col-span-3">
+                  <div className="col-span-2">
                     <a 
                       href={`/question/${question._id}`}
                       className="text-slate-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 font-medium transition-colors"
@@ -195,16 +203,40 @@ function Home() {
                     </a>
                     {question.notes && (
                       <div className="text-xs text-slate-500 mt-1 truncate">
-                        {question.notes.substring(0, 40)}...
+                        {question.notes.substring(0, 30)}...
                       </div>
                     )}
                   </div>
 
                   {/* Difficulty Column */}
-                  <div className="col-span-2">
+                  <div className="col-span-1">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getDifficultyColor(question.difficulty)}`}>
                       {question.difficulty}
                     </span>
+                  </div>
+
+                  {/* Completed By Column */}
+                  <div className="col-span-2">
+                    {question.completedByUsers && question.completedByUsers.length > 0 ? (
+                      <div className="flex items-center gap-1">
+                        {question.completedByUsers.slice(0, 3).map((user: any, index: number) => (
+                          <div
+                            key={user.username}
+                            className="w-6 h-6 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center text-xs font-bold text-emerald-700 shadow-sm"
+                            title={`Completed by ${user.username}${user.completedAt ? ` on ${new Date(user.completedAt).toLocaleDateString()}` : ''}`}
+                          >
+                            {user.username.charAt(0).toUpperCase()}
+                          </div>
+                        ))}
+                        {question.completedByUsers.length > 3 && (
+                          <span className="text-xs text-slate-500 ml-1">
+                            +{question.completedByUsers.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-slate-400 text-xs">None</span>
+                    )}
                   </div>
 
                   {/* Category Column */}

@@ -4,6 +4,7 @@ import { useMutation } from 'convex/react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 
 export const Route = createFileRoute('/question/$questionId')({
   component: QuestionDetail,
@@ -11,8 +12,12 @@ export const Route = createFileRoute('/question/$questionId')({
 
 function QuestionDetail() {
   const { questionId } = Route.useParams()
+  const { user } = useAuth()
   const { data: question } = useSuspenseQuery(
-    convexQuery(api.myFunctions.getQuestionById, { questionId: questionId as any })
+    convexQuery(api.myFunctions.getQuestionById, { 
+      questionId: questionId as any,
+      currentUser: user?.username
+    })
   )
   
   const updateProgress = useMutation(api.myFunctions.updateUserProgress)
@@ -22,6 +27,7 @@ function QuestionDetail() {
     timeComplexity: question?.timeComplexity || '',
     spaceComplexity: question?.spaceComplexity || '',
     complexityNotes: question?.complexityNotes || '',
+    explanation: question?.explanation || '',
     topics: question?.topics || [],
     newTopic: ''
   })
@@ -39,10 +45,10 @@ function QuestionDetail() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'TODO': return 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
-      case 'IN_PROGRESS': return 'bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200'
-      case 'DONE': return 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
-      default: return 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+      case 'TODO': return 'bg-slate-200 text-slate-800 border-slate-400 hover:bg-slate-300 shadow-sm'
+      case 'IN_PROGRESS': return 'bg-amber-400 text-amber-900 border-amber-500 hover:bg-amber-500 shadow-md font-medium'
+      case 'DONE': return 'bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600 shadow-md font-medium'
+      default: return 'bg-slate-200 text-slate-800 border-slate-400 hover:bg-slate-300 shadow-sm'
     }
   }
 
@@ -56,25 +62,33 @@ function QuestionDetail() {
   }
 
   const updateQuestionStatus = (newStatus: string) => {
+    if (!user?.username) return
+    
     updateProgress({
       questionId: question._id as any,
+      username: user.username,
       status: newStatus as any,
       notes: question.notes,
       timeComplexity: question.timeComplexity,
       spaceComplexity: question.spaceComplexity,
       complexityNotes: question.complexityNotes,
+      explanation: question.explanation,
       topics: question.topics,
     })
   }
 
   const handleSave = () => {
+    if (!user?.username) return
+    
     updateProgress({
       questionId: question._id as any,
+      username: user.username,
       status: question.status as any,
       notes: editData.notes,
       timeComplexity: editData.timeComplexity,
       spaceComplexity: editData.spaceComplexity,
       complexityNotes: editData.complexityNotes,
+      explanation: editData.explanation || '',
       topics: editData.topics,
     })
     setIsEditing(false)
@@ -86,6 +100,7 @@ function QuestionDetail() {
       timeComplexity: question.timeComplexity || '',
       spaceComplexity: question.spaceComplexity || '',
       complexityNotes: question.complexityNotes || '',
+      explanation: question.explanation || '',
       topics: question.topics || [],
       newTopic: ''
     })
@@ -148,10 +163,10 @@ function QuestionDetail() {
                 <button
                   key={status}
                   onClick={() => updateQuestionStatus(status)}
-                  className={`px-3 py-1.5 text-sm font-medium border rounded-lg transition-colors ${
+                  className={`px-3 py-1.5 text-sm font-medium border rounded-lg transition-all ${
                     question.status === status
                       ? getStatusColor(status)
-                      : 'bg-slate-50 text-slate-600 border-slate-300 hover:bg-slate-100'
+                      : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-600'
                   }`}
                 >
                   {status.replace('_', ' ')}
@@ -205,6 +220,27 @@ function QuestionDetail() {
                 <div className="min-h-[6rem] p-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md">
                   {question.notes || (
                     <span className="text-slate-400 italic">No notes yet. Click Edit to add your solution approach and insights.</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Solution Explanation */}
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Solution Explanation</h2>
+              
+              {isEditing ? (
+                <textarea
+                  value={editData.explanation}
+                  onChange={(e) => setEditData(prev => ({ ...prev, explanation: e.target.value }))}
+                  placeholder="Explain your solution step by step... How does the algorithm work? What's the intuition behind it?"
+                  className="w-full p-3 border border-slate-300 rounded-md resize-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-slate-700 dark:border-slate-600"
+                  rows={6}
+                />
+              ) : (
+                <div className="min-h-[4rem] p-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md">
+                  {question.explanation || (
+                    <span className="text-slate-400 italic">No explanation yet. Click Edit to add a detailed explanation of your solution approach.</span>
                   )}
                 </div>
               )}
@@ -397,6 +433,78 @@ function QuestionDetail() {
             >
               Cancel
             </button>
+          </div>
+        )}
+
+        {/* Collaborative Section - Other Users' Contributions */}
+        {question.completedByUsers && question.completedByUsers.length > 0 && (
+          <div className="mt-8 p-6 bg-slate-100 dark:bg-slate-700 rounded-lg">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+              Community Solutions ({question.completedByUsers.length} user{question.completedByUsers.length > 1 ? 's' : ''})
+            </h3>
+            
+            <div className="space-y-6">
+              {question.completedByUsers.map((userSolution: any, index: number) => (
+                <div key={`${userSolution.username}-${index}`} className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-600">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center text-sm font-bold text-emerald-700">
+                        {userSolution.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-medium text-slate-900 dark:text-white">
+                          {userSolution.username}
+                        </div>
+                        {userSolution.completedAt && (
+                          <div className="text-xs text-slate-500">
+                            Completed {new Date(userSolution.completedAt).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Complexity Analysis */}
+                    {(userSolution.timeComplexity || userSolution.spaceComplexity) && (
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Complexity</h4>
+                        <div className="space-y-1">
+                          {userSolution.timeComplexity && (
+                            <div className="text-sm">
+                              <span className="text-slate-600 dark:text-slate-400">Time: </span>
+                              <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-xs font-mono">
+                                {userSolution.timeComplexity}
+                              </code>
+                            </div>
+                          )}
+                          {userSolution.spaceComplexity && (
+                            <div className="text-sm">
+                              <span className="text-slate-600 dark:text-slate-400">Space: </span>
+                              <code className="bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-xs font-mono">
+                                {userSolution.spaceComplexity}
+                              </code>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Notes/Explanation */}
+                    {(userSolution.notes || userSolution.explanation) && (
+                      <div>
+                        <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                          {userSolution.explanation ? 'Explanation' : 'Notes'}
+                        </h4>
+                        <div className="text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-700 p-3 rounded">
+                          {userSolution.explanation || userSolution.notes}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
