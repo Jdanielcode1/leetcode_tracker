@@ -62,11 +62,6 @@ function Home() {
     })
   }
 
-  const startEditingNotes = (questionId: string, currentNotes: string) => {
-    setEditingNotes(questionId)
-    setNoteText(currentNotes)
-  }
-
   const saveNotes = (questionId: string, currentStatus: string) => {
     updateQuestionStatus(questionId, currentStatus, noteText)
     setEditingNotes(null)

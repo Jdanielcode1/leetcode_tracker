@@ -7,6 +7,7 @@ import {
 import { QueryClient } from '@tanstack/react-query'
 import * as React from 'react'
 import appCss from '~/styles/app.css?url'
+import { ProtectedRoute } from '../components/ProtectedRoute'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -54,7 +55,9 @@ export const Route = createRootRouteWithContext<{
 function RootComponent() {
   return (
     <RootDocument>
-      <Outlet />
+      <ProtectedRoute>
+        <Outlet />
+      </ProtectedRoute>
     </RootDocument>
   )
 }
